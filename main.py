@@ -1,13 +1,10 @@
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
-from app.database import engine
-import app.models.user
-import app.models.vehicle
-import app.models.customer
-import app.models.trip
+import os
 
-from app.routers.auth import router as auth_router
-from app.routers.trips import router as trips_router
+from app.routers import trips, auth
 
 app = FastAPI(title="Sterco Logistics")
 
@@ -20,11 +17,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(auth_router)
-app.include_router(trips_router)
+# Include routers
+app.include_router(trips.router)
+app.include_router(auth.router)
+
+# Serve the frontend
+frontend_path = os.path.join(os.path.dirname(__file__), "frontend")
 
 @app.get("/")
-async def root():
-    return {"message": "Sterco Logistics API is running!"}
+async def serve_frontend():
+    return FileResponse(os.path.join(frontend_path, "index.html"))
 
-print("✅ Sterco Logistics Backend Started!")
+# Optional: serve other static files if needed later
+# app.mount("/static", StaticFiles(directory=frontend_path), name="static")
+
+print("Sterco Logistics is running!")
