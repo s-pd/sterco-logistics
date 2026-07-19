@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sterco Logistics • Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f0f2f5;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(180deg, #1a365d 0%, #0f2744 100%);
+            color: white;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.1);
+        }
+        .nav-link {
+            color: #a0aec0;
+            padding: 12px 18px;
+            border-radius: 10px;
+            margin: 5px 0;
+            transition: all 0.2s;
+        }
+        .nav-link:hover, .nav-link.active {
+            background-color: #2b6cb0;
+            color: white;
+        }
+        .stat-card {
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: all 0.25s ease;
+            background: white;
+        }
+        .stat-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+        }
+        .main-content {
+            padding: 30px;
+        }
+        .table thead {
+            background-color: #1a365d;
+            color: white;
+        }
+        .table th {
+            font-weight: 600;
+            padding: 14px 16px;
+        }
+        .table td {
+            padding: 14px 16px;
+            vertical-align: middle;
+        }
+        .btn-primary {
+            background-color: #2b6cb0;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 18px;
+        }
+        .btn-primary:hover {
+            background-color: #2c5282;
+        }
+        .modal-header {
+            background-color: #1a365d;
+            color: white;
+        }
+        .form-control, .form-select {
+            border-radius: 8px;
+            padding: 10px 14px;
+        }
+        .brand {
+            font-size: 1.35rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        .alert-fixed {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            min-width: 300px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container-fluid">
+    <div class="row">
+        
+        <!-- Sidebar -->
+        <div class="col-md-2 sidebar p-0">
+            <div class="p-4">
+                <div class="brand mb-4">
+                    <i class="bi bi-truck me-2"></i>Sterco Logistics
+                </div>
+                
+                <nav class="nav flex-column">
+                    <a class="nav-link active" href="#"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a>
+                    <a class="nav-link" href="#"><i class="bi bi-list-task me-2"></i> All Trips</a>
+                    <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#createTripModal">
+                        <i class="bi bi-plus-circle me-2"></i> Create Trip
+                    </a>
+                    <a class="nav-link" href="#"><i class="bi bi-truck me-2"></i> Vehicles</a>
+                    <a class="nav-link" href="#"><i class="bi bi-people me-2"></i> Drivers</a>
+                </nav>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-10 main-content">
+            
+            <!-- Top Navbar -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="fw-bold mb-0">Dashboard</h2>
+                    <small class="text-muted">Welcome back, manage your logistics operations</small>
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                    <span>Welcome, <strong>Saif</strong></span>
+                    <button class="btn btn-outline-danger btn-sm rounded-pill px-3">Logout</button>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="row g-4 mb-5">
+                <div class="col-md-3">
+                    <div class="card stat-card p-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted mb-1">Total Trips</h6>
+                                <h2 class="fw-bold mb-0" id="totalTrips">0</h2>
+                            </div>
+                            <div class="bg-primary bg-opacity-10 p-3 rounded-circle">
+                                <i class="bi bi-list-task fs-3 text-primary"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card p-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted mb-1">Active Trips</h6>
+                                <h2 class="fw-bold mb-0 text-success" id="activeTrips">0</h2>
+                            </div>
+                            <div class="bg-success bg-opacity-10 p-3 rounded-circle">
+                                <i class="bi bi-play-circle fs-3 text-success"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card p-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted mb-1">Completed</h6>
+                                <h2 class="fw-bold mb-0 text-primary" id="completedTrips">0</h2>
+                            </div>
+                            <div class="bg-primary bg-opacity-10 p-3 rounded-circle">
+                                <i class="bi bi-check-circle fs-3 text-primary"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card stat-card p-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted mb-1">This Month</h6>
+                                <h2 class="fw-bold mb-0" id="monthTrips">0</h2>
+                            </div>
+                            <div class="bg-warning bg-opacity-10 p-3 rounded-circle">
+                                <i class="bi bi-calendar-month fs-3 text-warning"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trips Table -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                    <h5 class="mb-0 fw-bold">Recent Trips</h5>
+                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createTripModal">
+                        <i class="bi bi-plus-lg me-1"></i> New Trip
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Trip ID</th>
+                                    <th>Customer</th>
+                                    <th>Pickup</th>
+                                    <th>Delivery</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tripsTableBody">
+                                <tr>
+                                    <td colspan="7" class="text-center py-4 text-muted">Loading trips...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Create Trip Modal -->
+<div class="modal fade" id="createTripModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i>Create New Trip</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="createTripForm">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-semibold">Vehicle ID</label>
+                            <input type="text" class="form-control" id="vehicle_id" placeholder="e.g. VH-001" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-semibold">Driver ID</label>
+                            <input type="text" class="form-control" id="driver_id" placeholder="e.g. DR-012" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-semibold">Customer ID</label>
+                            <input type="text" class="form-control" id="customer_id" placeholder="e.g. CU-045" required>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold">Pickup Address</label>
+                            <input type="text" class="form-control" id="pickup_address" placeholder="Full pickup address" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold">Delivery Address</label>
+                            <input type="text" class="form-control" id="delivery_address" placeholder="Full delivery address" required>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold">Pickup Date</label>
+                            <input type="datetime-local" class="form-control" id="pickup_date" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold">Amount (£)</label>
+                            <input type="number" step="0.01" class="form-control" id="amount" placeholder="e.g. 250.00" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Notes (Optional)</label>
+                        <textarea class="form-control" id="notes" rows="2" placeholder="Any special instructions..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary px-4" id="createTripBtn">Create Trip</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const API_URL = "http://127.0.0.1:8000";
+
+    // ====================== LOAD TRIPS ======================
+    async function loadTrips() {
+        try {
+            const response = await fetch(`${API_URL}/trips/`);
+            if (!response.ok) throw new Error("Failed to load trips");
+
+            const data = await response.json();
+            const trips = data.trips || [];
+
+            const tbody = document.getElementById("tripsTableBody");
+            tbody.innerHTML = "";
+
+            if (trips.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted">No trips found</td></tr>`;
+                updateStats([]);
+                return;
+            }
+
+            trips.forEach(trip => {
+                const badgeClass = getBadgeClass(trip.status);
+                const row = `
+                    <tr>
+                        <td><strong>#TRP-${trip.id}</strong></td>
+                        <td>${trip.customer_id || '-'}</td>
+                        <td>${trip.pickup_address || '-'}</td>
+                        <td>${trip.delivery_address || '-'}</td>
+                        <td><span class="badge ${badgeClass} rounded-pill">${trip.status || 'Scheduled'}</span></td>
+                        <td>${formatDate(trip.pickup_date)}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary rounded-pill px-3">View</button>
+                        </td>
+                    </tr>
+                `;
+                tbody.insertAdjacentHTML("beforeend", row);
+            });
+
+            updateStats(trips);
+
+        } catch (error) {
+            console.error(error);
+            document.getElementById("tripsTableBody").innerHTML = `
+                <tr><td colspan="7" class="text-center py-4 text-danger">
+                    Could not load trips. Make sure the backend is running.
+                </td></tr>`;
+        }
+    }
+
+    // ====================== CREATE TRIP ======================
+    document.getElementById("createTripBtn").addEventListener("click", async function () {
+        const vehicle_id = document.getElementById("vehicle_id").value.trim();
+        const driver_id = document.getElementById("driver_id").value.trim();
+        const customer_id = document.getElementById("customer_id").value.trim();
+        const pickup_address = document.getElementById("pickup_address").value.trim();
+        const delivery_address = document.getElementById("delivery_address").value.trim();
+        const pickup_date = document.getElementById("pickup_date").value;
+        const amount = document.getElementById("amount").value;
+        const notes = document.getElementById("notes").value.trim();
+
+        if (!vehicle_id || !driver_id || !customer_id || !pickup_address || !delivery_address || !pickup_date || !amount) {
+            showMessage("Please fill all required fields", "danger");
+            return;
+        }
+
+        const tripData = {
+            vehicle_id: vehicle_id,
+            driver_id: driver_id,
+            customer_id: customer_id,
+            pickup_address: pickup_address,
+            delivery_address: delivery_address,
+            pickup_date: pickup_date,
+            amount: parseFloat(amount),
+            notes: notes || null
+        };
+
+        try {
+            const response = await fetch(`${API_URL}/trips/`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(tripData)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || "Failed to create trip");
+            }
+
+            document.getElementById("createTripForm").reset();
+            const modal = bootstrap.Modal.getInstance(document.getElementById("createTripModal"));
+            modal.hide();
+
+            showMessage("Trip created successfully!", "success");
+            loadTrips();
+
+        } catch (error) {
+            console.error(error);
+            showMessage(error.message || "Error creating trip", "danger");
+        }
+    });
+
+    // ====================== HELPERS ======================
+    function getBadgeClass(status) {
+        if (status === "Completed") return "bg-success";
+        if (status === "In Transit") return "bg-warning text-dark";
+        return "bg-info text-dark";
+    }
+
+    function formatDate(dateString) {
+        if (!dateString) return "-";
+        const date = new Date(dateString);
+        return date.toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric"
+        });
+    }
+
+    function updateStats(trips) {
+        document.getElementById("totalTrips").textContent = trips.length;
+        document.getElementById("activeTrips").textContent = trips.filter(t => t.status === "In Transit").length;
+        document.getElementById("completedTrips").textContent = trips.filter(t => t.status === "Completed").length;
+        document.getElementById("monthTrips").textContent = trips.length;
+    }
+
+    function showMessage(message, type) {
+        const existing = document.querySelector(".alert-fixed");
+        if (existing) existing.remove();
+
+        const alert = document.createElement("div");
+        alert.className = `alert alert-${type} alert-dismissible fade show alert-fixed`;
+        alert.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(alert);
+
+        setTimeout(() => alert.remove(), 4000);
+    }
+
+    // Start
+    loadTrips();
+</script>
+</body>
+</html>
