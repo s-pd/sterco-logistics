@@ -1,93 +1,36 @@
-from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel
-from typing import Optional
-from datetime import datetime
-from sqlalchemy import text
-from ..database import engine
-from ..routers.auth import get_current_user   # We'll create this next
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from app.database import get_db
+from app.schemas.trip import Trip, TripCreate, TripUpdate
+from app.services import trip_service
 
 router = APIRouter(prefix="/trips", tags=["Trips"])
 
-class TripCreate(BaseModel):
-    vehicle_id: str
-    driver_id: str
-    customer_id: str
-    pickup_address: str
-    delivery_address: str
-    pickup_date: datetime
-    amount: float
-    notes: Optional[str] = None
+@router.get("/", response_model=list[Trip])
+def get_trips(db: Session = Depends(get_db)):
+    return trip_service.get_all_trips(db)
 
-class TripUpdate(BaseModel):
-    pickup_address: Optional[str] = None
-    delivery_address: Optional[str] = None
-    pickup_date: Optional[datetime] = None
-    amount: Optional[float] = None
-    notes: Optional[str] = None
-    status: Optional[str] = None
+@router.post("/", response_model=Trip)
+def create_new_trip(trip: TripCreate, db: Session = Depends(get_db)):
+    return trip_service.create_trip(db, trip)
 
+@router.get("/{trip_id}", response_model=Trip)
+def get_single_trip(trip_id: int, db: Session = Depends(get_db)):
+    trip = trip_service.get_trip_by_id(db, trip_id)
+    if not trip:
+        raise HTTPException(status_code=404, detail="Trip not found")
+    return trip
 
-# ==================== PROTECTED ROUTES ====================
-
-@router.get("/")
-async def get_all_trips():
-    with engine.connect() as conn:
-        result = conn.execute(text("SELECT * FROM trips ORDER BY created_at DESC"))
-        trips = [dict(row) for row in result.mappings()]
-    return {"trips": trips}
-
-
-@router.post("/")
-async def create_trip(trip: TripCreate):
-    try:
-        with engine.connect() as conn:
-            conn.execute(text("""
-                INSERT INTO trips 
-                (vehicle_id, driver_id, customer_id, pickup_address, delivery_address, pickup_date, amount, notes)
-                VALUES 
-                (:vehicle_id, :driver_id, :customer_id, :pickup_address, :delivery_address, :pickup_date, :amount, :notes)
-            """), trip.dict())
-            conn.commit()
-        return {"message": "Trip created successfully!"}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-
-@router.put("/{trip_id}")
-async def update_trip(trip_id: str, trip: TripUpdate, current_user: dict = Depends(get_current_user)):
-    try:
-        with engine.connect() as conn:
-            existing = conn.execute(text("SELECT id FROM trips WHERE id = :id"), {"id": trip_id}).fetchone()
-            if not existing:
-                raise HTTPException(status_code=404, detail="Trip not found")
-
-            update_data = {k: v for k, v in trip.dict().items() if v is not None}
-            if not update_data:
-                raise HTTPException(status_code=400, detail="No fields to update")
-
-            set_clause = ", ".join([f"{k} = :{k}" for k in update_data.keys()])
-            update_data["id"] = trip_id
-
-            conn.execute(text(f"""
-                UPDATE trips 
-                SET {set_clause}
-                WHERE id = :id
-            """), update_data)
-            conn.commit()
-
-        return {"message": "Trip updated successfully!"}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
+@router.put("/{trip_id}", response_model=Trip)
+def update_existing_trip(trip_id: int, trip: TripUpdate, db: Session = Depends(get_db)):
+    updated = trip_service.update_trip(db, trip_id, trip)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Trip not found")
+    return updated
 
 @router.delete("/{trip_id}")
-async def delete_trip(trip_id: str, current_user: dict = Depends(get_current_user)):
-    try:
-        with engine.connect() as conn:
-            result = conn.execute(text("DELETE FROM trips WHERE id = :id"), {"id": trip_id})
-            conn.commit()
-            if result.rowcount == 0:
-                raise HTTPException(status_code=404, detail="Trip not found")
-        return {"message": "Trip deleted successfully!"}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+def delete_existing_trip(trip_id: int, db: Session = Depends(get_db)):
+    deleted = trip_service.delete_trip(db, trip_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Trip not found")
+    return {"message": "Trip deleted successfully"}
